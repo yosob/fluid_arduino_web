@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"E:\\BaiduSyncdisk\\somethingget\\fenling\\toolchain\\液动工具包\\一期\\初阶arduino气液驱动器\\code\\fliud_v0_web\\public\\firmware\\fluid_v1.hex\")",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(if:*)",
+      "Bash(then rmdir src/lib)",
+      "Bash(else echo \"src/lib directory not empty or doesn''t exist\")",
+      "Bash(fi:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

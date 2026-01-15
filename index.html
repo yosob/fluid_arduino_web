@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>液动控制系统 v1.0</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- avrgirl-arduino 库 (global 版本，直接挂载到 window.AvrgirlArduino) -->
+    <script src="/avrgirl-arduino.global.js"></script>
+    <script>
+      // 验证加载
+      console.log('=== avrgirl-arduino.global.js 加载检查 ===')
+      console.log('window.AvrgirlArduino:', typeof window.AvrgirlArduino)
+      if (typeof window.AvrgirlArduino !== 'undefined') {
+        console.log('✓ avrgirl-arduino 加载成功')
+        console.log('构造函数:', window.AvrgirlArduino)
+      } else {
+        console.error('✗ avrgirl-arduino 加载失败')
+      }
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
