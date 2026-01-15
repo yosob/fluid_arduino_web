@@ -17,7 +17,7 @@ export const CMD = {
   LOOP_STOP: 0x17,
   LOOP_PAUSE: 0x18,
   LOOP_RESUME: 0x19,
-  SET_MODE: 0x1A,
+  // SET_MODE (0x1A) 已在 v1.3 废除 - 使用自动模式切换机制
   GET_VERSION: 0x20,
   GET_STATUS: 0x21,
   GET_LOOP_STATUS: 0x22,
@@ -312,16 +312,26 @@ export function parseStatusResponse(data) {
 }
 
 /**
- * 解析循环状态响应
- * @param {Uint8Array} data - 数据字段
- * @returns {Object} 循环状态 { state, currentIndex, totalSteps, loopCount, totalLoops }
+ * 解析循环状态响应 (v1.3 双通道)
+ * @param {Uint8Array} data - 数据字段 (10字节)
+ * @returns {Object} 双通道循环状态 { ch1: {...}, ch2: {...} }
  */
 export function parseLoopStatusResponse(data) {
+  // v1.3: 双通道状态，每个通道5字节，共10字节
   return {
-    state: data[0], // 0=停止, 1=运行, 2=暂停
-    currentIndex: data[1],
-    totalSteps: data[2],
-    loopCount: data[3],
-    totalLoops: data[4]
+    ch1: {
+      state: data[0],      // 0=停止, 1=运行, 2=暂停
+      current: data[1],    // 当前执行第几条 (1-based)
+      total: data[2],      // 总指令数
+      loopCount: data[3],  // 已循环次数
+      maxLoops: data[4]    // 最大循环次数 (0=无限)
+    },
+    ch2: {
+      state: data[5],
+      current: data[6],
+      total: data[7],
+      loopCount: data[8],
+      maxLoops: data[9]
+    }
   }
 }

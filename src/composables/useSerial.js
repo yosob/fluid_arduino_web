@@ -256,7 +256,10 @@ export function useSerial() {
     const { cmd, data, error } = result
 
     if (error) {
-      handleError(new Error(`命令执行失败: ${getErrorText(error)}`))
+      // MODE_CONFLICT (0x08) 错误不显示错误框（循环模式下手动控制的错误）
+      if (error !== ERROR_CODE.MODE_CONFLICT) {
+        handleError(new Error(`命令执行失败: ${getErrorText(error)}`))
+      }
       return
     }
 
@@ -295,7 +298,8 @@ export function useSerial() {
 
       case CMD.LOOP_STATUS_RSP:
         const loopStatus = parseLoopStatusResponse(data)
-        loopStore.updateLoopStatus(loopStatus)
+        // 使用新的updateStatus方法更新双通道状态
+        loopStore.updateStatus(loopStatus)
         break
 
       case CMD.ACK:

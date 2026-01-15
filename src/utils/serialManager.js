@@ -372,7 +372,10 @@ export class SerialManager {
 
       if (result) {
         if (result.error) {
-          this.logStore?.addErrorLog(`命令执行失败: 错误码 0x${result.error.toString(16)}`)
+          // MODE_CONFLICT (0x08) 错误不记录日志（循环模式下手动控制的错误）
+          if (result.error !== 0x08) {
+            this.logStore?.addErrorLog(`命令执行失败: 错误码 0x${result.error.toString(16)}`)
+          }
         } else {
           this.logStore?.addSuccessLog(`收到响应: 命令 0x${result.cmd.toString(16)}`)
         }

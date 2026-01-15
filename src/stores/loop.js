@@ -1,5 +1,6 @@
 /**
  * 循环模式状态管理
+ * 支持 Protocol v1.3 双通道独立状态
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -9,14 +10,32 @@ export const useLoopStore = defineStore('loop', () => {
   const isRunning = ref(false)
   const isPaused = ref(false)
 
-  // 当前执行信息
+  // 当前执行信息（旧的单一状态，保持向后兼容）
   const currentIndex = ref(0)
   const totalSteps = ref(0)
   const loopCount = ref(0)
   const totalLoops = ref(0) // 0=无限循环
 
-  // 时序表
+  // 时序表（统一存储，包含channel字段）
   const sequence = ref([])
+
+  // 双通道状态（Protocol v1.3）
+  const status = ref({
+    ch1: {
+      state: 0,      // 状态 (0=停止, 1=运行, 2=暂停)
+      current: 0,    // 当前命令索引
+      total: 0,      // 总命令数
+      loopCount: 0,  // 当前循环次数
+      maxLoops: 0    // 最大循环次数 (0=无限)
+    },
+    ch2: {
+      state: 0,
+      current: 0,
+      total: 0,
+      loopCount: 0,
+      maxLoops: 0
+    }
+  })
 
   /**
    * 添加时序指令
@@ -52,24 +71,43 @@ export const useLoopStore = defineStore('loop', () => {
   }
 
   /**
-   * 更新循环状态
+   * 更新循环状态（旧版本，保持向后兼容）
    */
-  function updateLoopStatus(status) {
-    if (status.state !== undefined) {
-      isRunning.value = status.state === 1
-      isPaused.value = status.state === 2
+  function updateLoopStatus(loopStatusData) {
+    if (loopStatusData.state !== undefined) {
+      isRunning.value = loopStatusData.state === 1
+      isPaused.value = loopStatusData.state === 2
     }
-    if (status.currentIndex !== undefined) {
-      currentIndex.value = status.currentIndex
+    if (loopStatusData.currentIndex !== undefined) {
+      currentIndex.value = loopStatusData.currentIndex
     }
-    if (status.totalSteps !== undefined) {
-      totalSteps.value = status.totalSteps
+    if (loopStatusData.totalSteps !== undefined) {
+      totalSteps.value = loopStatusData.totalSteps
     }
-    if (status.loopCount !== undefined) {
-      loopCount.value = status.loopCount
+    if (loopStatusData.loopCount !== undefined) {
+      loopCount.value = loopStatusData.loopCount
     }
-    if (status.totalLoops !== undefined) {
-      totalLoops.value = status.totalLoops
+    if (loopStatusData.totalLoops !== undefined) {
+      totalLoops.value = loopStatusData.totalLoops
+    }
+  }
+
+  /**
+   * 更新双通道状态（Protocol v1.3）
+   * @param {Object} loopStatusData - 从useSerial接收到的双通道状态
+   */
+  function updateStatus(loopStatusData) {
+    if (loopStatusData.ch1) {
+      status.value.ch1 = { ...loopStatusData.ch1 }
+      // 更新旧状态以保持兼容
+      if (loopStatusData.ch1.state !== undefined) {
+        isRunning.value = loopStatusData.ch1.state === 1
+        isPaused.value = loopStatusData.ch1.state === 2
+      }
+    }
+
+    if (loopStatusData.ch2) {
+      status.value.ch2 = { ...loopStatusData.ch2 }
     }
   }
 
@@ -81,6 +119,24 @@ export const useLoopStore = defineStore('loop', () => {
     isPaused.value = false
     currentIndex.value = 0
     loopCount.value = 0
+
+    // 重置双通道状态
+    status.value = {
+      ch1: {
+        state: 0,
+        current: 0,
+        total: 0,
+        loopCount: 0,
+        maxLoops: 0
+      },
+      ch2: {
+        state: 0,
+        current: 0,
+        total: 0,
+        loopCount: 0,
+        maxLoops: 0
+      }
+    }
   }
 
   /**
@@ -111,12 +167,14 @@ export const useLoopStore = defineStore('loop', () => {
     loopCount,
     totalLoops,
     sequence,
+    status,  // 新增：双通道状态
 
     // 方法
     addStep,
     removeStep,
     clearSequence,
-    updateLoopStatus,
+    updateLoopStatus,  // 旧方法，保持兼容
+    updateStatus,      // 新方法：更新双通道状态
     resetLoopStatus,
     getProgressPercent,
     getLoopCountText

@@ -48,12 +48,12 @@
 </template>
 
 <script setup>
-import SerialPortSelector from '@/components/SerialPortSelector.vue'
-import StatusIndicator from '@/components/StatusIndicator.vue'
-import ChannelPanel from '@/components/ChannelPanel.vue'
-import LoopManager from '@/components/LoopManager.vue'
-import EmergencyStop from '@/components/EmergencyStop.vue'
-import LogViewer from '@/components/LogViewer.vue'
+import SerialPortSelector from '@/components/device/SerialPortSelector.vue'
+import StatusIndicator from '@/components/device/StatusIndicator.vue'
+import ChannelPanel from '@/components/device/ChannelPanel.vue'
+import LoopManager from '@/components/device/LoopManager.vue'
+import EmergencyStop from '@/components/device/EmergencyStop.vue'
+import LogViewer from '@/components/device/LogViewer.vue'
 </script>
 
 <style scoped>

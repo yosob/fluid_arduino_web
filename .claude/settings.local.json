@@ -13,7 +13,11 @@
       "Bash(if:*)",
       "Bash(then rmdir src/lib)",
       "Bash(else echo \"src/lib directory not empty or doesn''t exist\")",
-      "Bash(fi:*)"
+      "Bash(fi:*)",
+      "Bash(tree:*)",
+      "Bash(then echo \"Folder exists\")",
+      "Bash(else:*)",
+      "Bash(then echo \"File still exists in old location\")"
     ],
     "deny": [],
     "ask": []

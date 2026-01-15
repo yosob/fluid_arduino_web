@@ -3,7 +3,7 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <h1 class="title">液动控制系统 v1.5</h1>
+          <h1 class="title">液动控制系统 v1.6</h1>
         </div>
       </el-header>
 
@@ -23,6 +23,15 @@
               </template>
               <FirmwareUpdateSimple />
             </el-tab-pane>
+
+            <!-- 时间轴页面 -->
+            <el-tab-pane name="timeline">
+              <template #label>
+                <span>⏱️ 时间轴</span>
+                <el-tag type="info" size="small" style="margin-left: 8px;">v1.6</el-tag>
+              </template>
+              <TimelinePage />
+            </el-tab-pane>
           </el-tabs>
         </div>
       </el-main>
@@ -30,7 +39,7 @@
       <el-footer>
         <div class="footer-content">
           <span>液动工具包项目组 © 2025</span>
-          <span class="version">Web 上位机 v1.5</span>
+          <span class="version">Web 上位机 v1.6</span>
         </div>
       </el-footer>
     </el-container>
@@ -42,8 +51,9 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useHeartbeat } from '@/composables/useHeartbeat'
 import { useConnectionStore } from '@/stores/connection'
 import { storeToRefs } from 'pinia'
-import DeviceControlPage from '@/components/DeviceControlPage.vue'
-import FirmwareUpdateSimple from '@/components/FirmwareUpdateSimple.vue'
+import DeviceControlPage from '@/components/pages/DeviceControlPage.vue'
+import FirmwareUpdateSimple from '@/components/firmware/FirmwareUpdateSimple.vue'
+import TimelinePage from '@/components/pages/TimelinePage.vue'
 
 const activeTab = ref('device')
 const { start: startHeartbeat, stop: stopHeartbeat } = useHeartbeat()

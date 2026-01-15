@@ -67,6 +67,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useDeviceStore } from '@/stores/device'
 import { useSerial } from '@/composables/useSerial'
 import { storeToRefs } from 'pinia'
@@ -92,6 +93,7 @@ const props = defineProps({
 
 const deviceStore = useDeviceStore()
 const { startPump } = useSerial()
+const { workMode } = storeToRefs(deviceStore)
 
 const channelInfo = computed(() => deviceStore.channels[props.channel])
 const isRunning = computed(() => channelInfo.value.isRunning && channelInfo.value.activePump === props.pumpType + 1)
@@ -116,6 +118,16 @@ watch(
 )
 
 async function handleClick() {
+  // 检查是否在循环模式（workMode = 1）
+  if (workMode.value === 1) {
+    ElMessage.warning({
+      message: '循环模式中不能手动控制',
+      duration: 2000,
+      offset: 100
+    })
+    return
+  }
+
   if (isRunning.value) {
     // 如果正在运行，点击则停止
     // 注意：这里使用 stopChannel，需要传递通道号
@@ -129,6 +141,16 @@ async function handleClick() {
 }
 
 async function handlePwmChange(value) {
+  // 检查是否在循环模式
+  if (workMode.value === 1) {
+    ElMessage.warning({
+      message: '循环模式中不能手动控制',
+      duration: 2000,
+      offset: 100
+    })
+    return
+  }
+
   // 更新配置
   deviceStore.updatePumpConfig(props.channel, props.pumpType, value)
 

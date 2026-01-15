@@ -31,6 +31,13 @@
         </div>
 
         <div class="status-item">
+          <span class="label">工作模式:</span>
+          <el-tag :type="workModeInfo.type" :disabled="!connected">
+            {{ workModeInfo.text }}
+          </el-tag>
+        </div>
+
+        <div class="status-item">
           <span class="label">心跳状态:</span>
           <el-tag
             :type="heartbeatStatus.type"
@@ -57,10 +64,30 @@
 <script setup>
 import { computed } from 'vue'
 import { useConnectionStore } from '@/stores/connection'
+import { useDeviceStore } from '@/stores/device'
 import { storeToRefs } from 'pinia'
 
 const connectionStore = useConnectionStore()
+const deviceStore = useDeviceStore()
+
 const { connected, deviceInfo, heartbeatTimeout, heartbeatEnabled } = storeToRefs(connectionStore)
+const { workMode } = storeToRefs(deviceStore)
+
+// 工作模式显示信息
+const workModeInfo = computed(() => {
+  if (!connected.value) {
+    return { type: 'info', text: '未连接' }
+  }
+
+  // 0=指令模式(MANUAL), 1=循环模式(LOOP), 2=停止模式(STOP)
+  const modeMap = {
+    0: { type: 'primary', text: '🎮 指令模式' },
+    1: { type: 'success', text: '🔄 循环模式' },
+    2: { type: 'warning', text: '⏸ 停止模式' }
+  }
+
+  return modeMap[workMode.value] || { type: 'info', text: '未知模式' }
+})
 
 const heartbeatStatus = computed(() => {
   if (!connected.value) {
