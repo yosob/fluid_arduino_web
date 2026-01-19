@@ -193,9 +193,11 @@ export interface LogEntry {
  * 固件信息
  */
 export interface FirmwareInfo {
+  name: string
   version: string
   date: string
-  size: number
+  fileName: string
+  fileSize: number
   description: string
   filePath: string
 }

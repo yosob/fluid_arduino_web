@@ -1,7 +1,9 @@
 /**
  * 固件配置
  */
-export const FIRMWARE_INFO = {
+import type { FirmwareInfo } from '@/types'
+
+export const FIRMWARE_INFO: FirmwareInfo = {
   name: 'fluid V1.0',
   version: '1.0.0',
   date: '2025-01-14',
