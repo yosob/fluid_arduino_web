@@ -17,7 +17,8 @@
       "Bash(tree:*)",
       "Bash(then echo \"Folder exists\")",
       "Bash(else:*)",
-      "Bash(then echo \"File still exists in old location\")"
+      "Bash(then echo \"File still exists in old location\")",
+      "Bash(npm run type-check:*)"
     ],
     "deny": [],
     "ask": []
