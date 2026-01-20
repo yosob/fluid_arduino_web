@@ -94,22 +94,55 @@ const tempEnd = ref(0);
 const mouseDownTime = ref(0);
 const mouseDownX = ref(0); // 记录鼠标按下的初始位置
 
+// 泵类型映射：pumpType (number) → pump (string)
+const pumpTypeToPump = (pumpType) => {
+  const mapping = {
+    0: 'air',
+    1: 'water1',
+    2: 'water2',
+    255: 'off'
+  }
+  return mapping[pumpType] || 'off'
+}
+
+// 泵类型映射：pump (string) → pumpType (number)
+const pumpToPumpType = (pump) => {
+  const mapping = {
+    'air': 0,
+    'water1': 1,
+    'water2': 2,
+    'off': 255
+  }
+  return mapping[pump] ?? 255
+}
+
 // 计算显示的时间段（拖拽时使用临时值）
 const displaySegments = computed(() => {
   return props.segments.map((seg) => {
-    if (
-      isDragging.value &&
+    const isDraggingSegment = isDragging.value &&
       dragSegment.value &&
       seg.id === dragSegment.value.id
-    ) {
-      // 返回使用临时值的时间段
+
+    // 转换 SegmentData → 显示格式
+    const displaySeg = {
+      id: seg.id,
+      start: seg.startTime,
+      end: seg.endTime,
+      pump: pumpTypeToPump(seg.pumpType),
+      pwm: seg.pwm,
+      // 保存原始的 pumpType 用于后续更新
+      pumpType: seg.pumpType
+    }
+
+    // 如果正在拖拽，使用临时值
+    if (isDraggingSegment) {
       return {
-        ...seg,
+        ...displaySeg,
         start: tempStart.value,
         end: tempEnd.value,
       };
     }
-    return seg;
+    return displaySeg;
   });
 });
 
@@ -184,16 +217,16 @@ function addSegment() {
   const segments = props.segments || [];
   let startTime = 0;
 
-  // 按开始时间排序
-  const sortedSegments = [...segments].sort((a, b) => a.start - b.start);
+  // 按开始时间排序（使用 store 格式的 startTime）
+  const sortedSegments = [...segments].sort((a, b) => a.startTime - b.startTime);
 
   // 找到第一个空闲位置
   for (const seg of sortedSegments) {
-    if (startTime < seg.start) {
+    if (startTime < seg.startTime) {
       // 找到空闲位置
       break;
     }
-    startTime = seg.end + 0.5; // 留0.5秒间隙
+    startTime = seg.endTime + 0.5; // 留0.5秒间隙
   }
 
   // 如果超出总时长，提示用户
@@ -205,9 +238,9 @@ function addSegment() {
   const endTime = Math.min(startTime + 1, props.config.totalDuration);
 
   const newSegment = {
-    start: Math.round(startTime * 10) / 10,
-    end: Math.round(endTime * 10) / 10,
-    pump: "off",
+    startTime: Math.round(startTime * 10) / 10,
+    endTime: Math.round(endTime * 10) / 10,
+    pumpType: 255, // 停止
     pwm: 0,
   };
 
@@ -333,9 +366,9 @@ function handleMouseUp() {
         props.channel,
         originalSegment.value.id,
         {
-          start: tempStart.value,
-          end: tempEnd.value,
-          pump: originalSegment.value.pump,
+          startTime: tempStart.value,
+          endTime: tempEnd.value,
+          pumpType: originalSegment.value.pumpType,
           pwm: originalSegment.value.pwm,
         }
       );
@@ -358,14 +391,18 @@ function handleMouseUp() {
         );
 
         // 应用吸附后的位置
-        timelineStore.updateSegment(props.channel, originalSegment.value.id, {
-          start: snappedPosition.start,
-          end: snappedPosition.end,
-          pump: originalSegment.value.pump,
+        const updateResult = timelineStore.updateSegment(props.channel, originalSegment.value.id, {
+          startTime: snappedPosition.start,
+          endTime: snappedPosition.end,
+          pumpType: originalSegment.value.pumpType,
           pwm: originalSegment.value.pwm,
         });
 
-        ElMessage.success("已自动吸附到相邻时间段");
+        if (updateResult.success) {
+          ElMessage.success(`已自动吸附到相邻时间段 (${snappedPosition.start}s - ${snappedPosition.end}s)`);
+        } else {
+          ElMessage.error('自动吸附失败: ' + updateResult.message)
+        }
       }
     }
   }
@@ -396,8 +433,12 @@ function calculateSnapPosition(segment, otherSegments) {
 
   // 检查每个其他时间段的左侧和右侧间隙
   for (const other of otherSegments) {
+    // 转换 store 格式 → 显示格式
+    const otherStart = other.startTime || other.start;
+    const otherEnd = other.endTime || other.end;
+
     // 检查左侧间隙（放在其他时间段左边）
-    const leftGapEnd = other.start;
+    const leftGapEnd = otherStart;
     const leftGapStart = Math.max(0, leftGapEnd - segmentDuration);
 
     if (leftGapEnd - leftGapStart >= segmentDuration) {
@@ -413,7 +454,7 @@ function calculateSnapPosition(segment, otherSegments) {
     }
 
     // 检查右侧间隙（放在其他时间段右边）
-    const rightGapStart = other.end;
+    const rightGapStart = otherEnd;
     const rightGapEnd = Math.min(
       props.config.totalDuration,
       rightGapStart + segmentDuration
@@ -432,12 +473,33 @@ function calculateSnapPosition(segment, otherSegments) {
     }
   }
 
-  // 如果没有找到合适的位置，保持原位（但这种情况不应该发生）
+  // 如果没有找到合适的位置，尝试放到时间轴末尾
   if (!bestPosition) {
-    return {
-      start: segment.start,
-      end: segment.end,
-    };
+    // 计算所有时间段之后的位置
+    let lastEnd = 0;
+    for (const other of otherSegments) {
+      const otherEnd = other.endTime || other.end;
+      if (otherEnd > lastEnd) {
+        lastEnd = otherEnd;
+      }
+    }
+
+    const newStart = lastEnd;
+    const newEnd = Math.min(lastEnd + segmentDuration, props.config.totalDuration);
+
+    // 检查末尾是否有足够空间
+    if (newEnd - newStart >= segmentDuration && newStart < props.config.totalDuration) {
+      bestPosition = {
+        start: Math.round(newStart * 10) / 10,
+        end: Math.round(newEnd * 10) / 10,
+      };
+    } else {
+      // 实在找不到位置，返回原始位置（虽然会重叠）
+      return {
+        start: segment.start,
+        end: segment.end,
+      };
+    }
   }
 
   return bestPosition;

@@ -176,10 +176,10 @@ const duration = computed(() => {
 watch(() => props.visible, (newVal) => {
   dialogVisible.value = newVal
   if (newVal && props.segment) {
-    // 如果有传入时间段数据，填充表单
-    formData.start = props.segment.start
-    formData.end = props.segment.end
-    formData.pump = props.segment.pump
+    // 如果有传入时间段数据，填充表单（转换 store 格式 → 显示格式）
+    formData.start = props.segment.startTime || props.segment.start || 0
+    formData.end = props.segment.endTime || props.segment.end || 1
+    formData.pump = pumpTypeToPump(props.segment.pumpType || props.segment.pump)
     formData.pwm = props.segment.pwm || 200
   } else if (newVal) {
     // 否则使用默认值
@@ -207,15 +207,37 @@ function handleClose() {
   resetForm()
 }
 
+// 泵类型映射：pumpType (number) → pump (string)
+const pumpTypeToPump = (pumpType) => {
+  const mapping = {
+    0: 'air',
+    1: 'water1',
+    2: 'water2',
+    255: 'off'
+  }
+  return mapping[pumpType] || 'off'
+}
+
+// 泵类型映射：pump (string) → pumpType (number)
+const pumpToPumpType = (pump) => {
+  const mapping = {
+    'air': 0,
+    'water1': 1,
+    'water2': 2,
+    'off': 255
+  }
+  return mapping[pump] ?? 255
+}
+
 // 保存
 function handleSave() {
   formRef.value?.validate((valid) => {
     if (valid) {
       emit('save', {
         id: props.segment?.id || Date.now(),
-        start: formData.start,
-        end: formData.end,
-        pump: formData.pump,
+        startTime: formData.start,    // ← 转换为 store 格式
+        endTime: formData.end,        // ← 转换为 store 格式
+        pumpType: pumpToPumpType(formData.pump),  // ← 转换为 store 格式
         pwm: formData.pwm
       })
       dialogVisible.value = false
@@ -239,8 +261,8 @@ function handleCopy() {
   emit('copy', {
     ...props.segment,
     id: Date.now(),
-    start: formData.end,
-    end: formData.end + (formData.end - formData.start)
+    startTime: formData.end,    // ← 转换为 store 格式
+    endTime: formData.end + (formData.end - formData.start)  // ← 转换为 store 格式
   })
   dialogVisible.value = false
   ElMessage.success('复制成功')

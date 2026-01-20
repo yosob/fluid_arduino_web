@@ -282,6 +282,7 @@
             :min="100"
             :max="65535"
             :step="100"
+            :precision="0"
           />
         </el-form-item>
       </el-form>
